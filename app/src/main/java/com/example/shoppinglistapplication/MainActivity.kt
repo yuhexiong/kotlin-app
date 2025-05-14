@@ -13,7 +13,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.scale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,53 +30,81 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Title Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(text = "Shopping List", modifier = Modifier.align(Alignment.CenterVertically))
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(text = "購物清單")
+                }
+            )
         }
+    ) { innerPadding ->
 
-        // List of Items (rows)
         Column(
-            modifier = Modifier.weight(1f) // Takes up available space
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
         ) {
-            // Add your dynamic list items here
-            for (i in 1..5) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+
+            // 商品清單
+            Column(
+                modifier = Modifier.weight(1f) // 元件撐滿空間
+            ) {
+                val itemCount = 10
+                val checkedStates = remember { mutableStateListOf(*Array(itemCount) { false }) }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
                 ) {
-                    Text(text = "Item $i")
+                    items(itemCount) { i ->
+                    // 迴圈加入商品
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 1.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = checkedStates[i],
+                                onCheckedChange = { checkedStates[i] = it },
+                                modifier = Modifier.scale(0.8f)
+                            )
+                            Text(text = "商品 ${i + 1}")
+                        }
+
+                        // 右側刪除鍵
+                         IconButton(onClick = { /* 刪除項目 */ }) {
+                             Icon(Icons.Default.Delete, contentDescription = "Delete")
+                         }
+                    }}
+                }
+            }
+
+            // 底層輸入框和加入按鈕
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 輸入框
+                Text(text = "請輸入您的商品")
+
+                Button(onClick = { /* Handle Add Action */ }) {
+                    Text("加入")
                 }
             }
         }
-
-        // Input and Add Button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // You can replace this with an actual TextField
-            Text(text = "Input here")
-
-            Button(onClick = { /* Handle Add Action */ }) {
-                Text("Add")
-            }
-        }
     }
+
 }
 
 @Preview(showBackground = true)

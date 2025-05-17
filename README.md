@@ -1,4 +1,4 @@
-Shopping List APP
+# Shopping List APP
 
-
-<!-- testing for commit -->
+1. 按 'enter' 和 '加入' 都可以加入商品，加入後鍵盤自動收起
+2. 加入商品鍵盤收起後會自動滾到最底部

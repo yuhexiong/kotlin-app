@@ -20,7 +20,9 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
 import androidx.core.view.ViewCompat
+import kotlinx.coroutines.launch
 import androidx.core.view.WindowInsetsCompat.Type
+import android.util.Log
 
 
 class MainActivity : ComponentActivity() {
@@ -47,27 +49,40 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListScreen(isKeyboardVisible: Boolean) {
-    val items = remember { mutableStateListOf("蘋果", "香蕉", "橘子", "牛奶", "麵包") }
-    val checkedStates = remember { mutableStateListOf(false, false, false, false, false) }
+    val items = remember { mutableStateListOf("蘋果", "香蕉", "橘子", "牛奶", "麵包", "蛋糕", "起司") }
+    val checkedStates = remember { mutableStateListOf(false, false, false, false, false, false, false) }
     val newItemText = remember { mutableStateOf("") }
+    var isAddNewItem by remember { mutableStateOf(false) }
 
-    // 控制鍵盤開關
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    // 監聽 LazyColumn 滾動狀態
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
-    // 鍵盤關閉時自動滾到底部
-    LaunchedEffect(isKeyboardVisible, items.size) {
-        if (!isKeyboardVisible && items.isNotEmpty()) {
-            // 等待畫面渲染
-            delay(10)
+    LaunchedEffect(isKeyboardVisible, isAddNewItem) {
+        // 有加入新東西且確定已關閉鍵盤在滾到底部
+        if (!isKeyboardVisible && isAddNewItem) {
             listState.animateScrollToItem(items.size - 1)
+            isAddNewItem = false
+        }
+    }
+
+    // 加入商品
+    val addItem = {
+        val trimmed = newItemText.value.trim()
+        if (trimmed.isNotEmpty()) {
+            items.add(trimmed)
+            checkedStates.add(false)
+            newItemText.value = ""
+
+            // 關閉鍵盤
+            keyboardController?.hide()
+
+            // 確認有加入新東西
+            isAddNewItem = true
         }
     }
 
     Scaffold(
-//        modifier = Modifier.imePadding(),
         topBar = {
             CenterAlignedTopAppBar(title = { Text("購物清單") })
         }
@@ -78,7 +93,6 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // 商品清單區域
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -112,19 +126,6 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
                 }
             }
 
-            // 加入商品
-            val addItem = {
-                val trimmed = newItemText.value.trim()
-                if (trimmed.isNotEmpty()) {
-                    items.add(trimmed)
-                    checkedStates.add(false)
-                    newItemText.value = ""
-
-                    // 關閉鍵盤
-                    keyboardController?.hide()
-                }
-            }
-
             // 底部輸入與加入按鈕
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -136,7 +137,6 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
                     onValueChange = { newItemText.value = it },
                     placeholder = { Text("請輸入您的商品") },
                     modifier = Modifier.weight(1f),
-                    // 按 Enter 就加入商品
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { addItem() })
                 )
@@ -148,3 +148,4 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
         }
     }
 }
+

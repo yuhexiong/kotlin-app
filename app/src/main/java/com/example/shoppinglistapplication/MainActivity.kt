@@ -16,22 +16,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
 import androidx.core.view.ViewCompat
-import kotlinx.coroutines.launch
 import androidx.core.view.WindowInsetsCompat.Type
 import android.util.Log
+import androidx.room.Room
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
+import com.example.shoppinglistapplication.data.dao.ShoppingItemDao
+import com.example.shoppinglistapplication.data.database.AppDatabase
+import com.example.shoppinglistapplication.data.entity.ShoppingItem
 
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var db: AppDatabase
+    private lateinit var dao: ShoppingItemDao
+
 
     private val _isKeyboardVisible = mutableStateOf(false)
     val isKeyboardVisible: State<Boolean> get() = _isKeyboardVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        db = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "shopping-db").build()
+        dao = db.shoppingItemDao()
 
         val decorView = window.decorView
         ViewCompat.setOnApplyWindowInsetsListener(decorView) { v, insets ->
@@ -41,17 +52,29 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ShoppingListScreen(isKeyboardVisible = isKeyboardVisible.value)
+            // 用State保存資料，先設為空
+//            val items = remember { mutableStateListOf<ShoppingItem>() }
+
+//            LaunchedEffect(Unit) {
+//                // 用 coroutine 從 DB 載入資料
+//                val loadedItems = dao.getAllItems()
+//                items.addAll(loadedItems)
+//            }
+//
+////            ShoppingListScreen(items = items, dao = dao)
+
+            ShoppingListScreen(dao = dao, isKeyboardVisible = isKeyboardVisible.value)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShoppingListScreen(isKeyboardVisible: Boolean) {
-    val items = remember { mutableStateListOf("蘋果", "香蕉", "橘子", "牛奶", "麵包", "蛋糕", "起司") }
-    val checkedStates = remember { mutableStateListOf(false, false, false, false, false, false, false) }
-    val newItemText = remember { mutableStateOf("") }
+fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
+
+    val items by dao.getAllItems().collectAsState(initial = emptyList())  // 🔥 這裡轉成 List
+
+    var newItemText by remember { mutableStateOf("") }
     var isAddNewItem by remember { mutableStateOf(false) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -68,25 +91,23 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
 
     // 加入商品
     val addItem = {
-        val trimmed = newItemText.value.trim()
+        val trimmed = newItemText.trim()
         if (trimmed.isNotEmpty()) {
-            items.add(trimmed)
-            checkedStates.add(false)
-            newItemText.value = ""
-
-            // 關閉鍵盤
-            keyboardController?.hide()
-
-            // 確認有加入新東西
-            isAddNewItem = true
+            coroutineScope.launch {
+                dao.insertItem(ShoppingItem(name = trimmed))
+                newItemText = ""
+                // 關閉鍵盤
+                keyboardController?.hide()
+                // 確認有加入新東西
+                isAddNewItem = true
+            }
         }
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(title = { Text("購物清單") })
-        }
-    ) { innerPadding ->
+
+    Scaffold(topBar = {
+        CenterAlignedTopAppBar(title = { Text("購物清單") })
+    }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -100,6 +121,7 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
                     .fillMaxWidth()
             ) {
                 items(items.size) { i ->
+                    val item = items[i]
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -109,16 +131,21 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
-                                checked = checkedStates[i],
-                                onCheckedChange = { checkedStates[i] = it },
+                                checked = item.isBought,
+                                onCheckedChange = { checked ->
+                                    coroutineScope.launch {
+                                        dao.updateItem(item.copy(isBought = checked))
+                                    }
+                                },
                                 modifier = Modifier.scale(0.8f)
                             )
-                            Text(text = items[i])
+                            Text(text = item.name)
                         }
 
                         IconButton(onClick = {
-                            items.removeAt(i)
-                            checkedStates.removeAt(i)
+                            coroutineScope.launch {
+                                dao.deleteItem(item)
+                            }
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete")
                         }
@@ -133,15 +160,15 @@ fun ShoppingListScreen(isKeyboardVisible: Boolean) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextField(
-                    value = newItemText.value,
-                    onValueChange = { newItemText.value = it },
+                    value = newItemText,
+                    onValueChange = { newItemText = it },
                     placeholder = { Text("請輸入您的商品") },
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { addItem() })
                 )
 
-                Button(onClick = { addItem() }) {
+                Button(onClick = addItem) {
                     Text("加入")
                 }
             }

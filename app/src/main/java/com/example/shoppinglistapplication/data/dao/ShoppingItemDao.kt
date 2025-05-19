@@ -7,7 +7,7 @@ import com.example.shoppinglistapplication.data.entity.ShoppingItem
 @Dao
 interface ShoppingItemDao {
 
-    @Query("SELECT * FROM shopping_items ORDER BY id DESC")
+    @Query("SELECT * FROM shopping_items ORDER BY id ASC")
     fun getAllItems(): Flow<List<ShoppingItem>>
 
     @Insert

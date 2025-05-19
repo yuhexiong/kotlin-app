@@ -27,6 +27,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.shoppinglistapplication.data.dao.ShoppingItemDao
 import com.example.shoppinglistapplication.data.database.AppDatabase
 import com.example.shoppinglistapplication.data.entity.ShoppingItem
+import com.example.shoppinglistapplication.ui.theme.TopAppBarWithBackground
+import com.example.shoppinglistapplication.ui.theme.borderedItem
 
 
 class MainActivity : ComponentActivity() {
@@ -52,17 +54,6 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            // 用State保存資料，先設為空
-//            val items = remember { mutableStateListOf<ShoppingItem>() }
-
-//            LaunchedEffect(Unit) {
-//                // 用 coroutine 從 DB 載入資料
-//                val loadedItems = dao.getAllItems()
-//                items.addAll(loadedItems)
-//            }
-//
-////            ShoppingListScreen(items = items, dao = dao)
-
             ShoppingListScreen(dao = dao, isKeyboardVisible = isKeyboardVisible.value)
         }
     }
@@ -105,9 +96,11 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
     }
 
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(title = { Text("購物清單") })
-    }) { innerPadding ->
+    Scaffold(
+        topBar = {
+            TopAppBarWithBackground(titleText = "購物清單")
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -125,7 +118,8 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 4.dp)
+                            .borderedItem(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {

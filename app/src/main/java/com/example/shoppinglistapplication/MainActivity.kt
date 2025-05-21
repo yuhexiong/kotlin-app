@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.scale
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat.Type
 import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.room.Room
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
@@ -29,7 +31,11 @@ import com.example.shoppinglistapplication.data.database.AppDatabase
 import com.example.shoppinglistapplication.data.entity.ShoppingItem
 import com.example.shoppinglistapplication.ui.theme.TopAppBarWithBackground
 import com.example.shoppinglistapplication.ui.theme.borderedItem
-
+import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 
 class MainActivity : ComponentActivity() {
 
@@ -118,23 +124,30 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .borderedItem(),
+                            .padding(top = 4.dp, bottom = 4.dp)
+                            .borderedItem()
+                            .clickable {
+                                coroutineScope.launch {
+                                    dao.updateItem(item.copy(isBought = !item.isBought))
+                                }
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = item.isBought,
-                                onCheckedChange = { checked ->
-                                    coroutineScope.launch {
-                                        dao.updateItem(item.copy(isBought = checked))
-                                    }
-                                },
-                                modifier = Modifier.scale(0.8f)
-                            )
-                            Text(text = item.name)
-                        }
+                        Text(
+                            text = item.name,
+                            modifier = Modifier.padding(start = 16.dp),
+                            style = if (item.isBought) {
+                                TextStyle(
+                                    textDecoration = TextDecoration.LineThrough,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                TextStyle(fontWeight = FontWeight.Bold)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.weight(1f))
 
                         IconButton(onClick = {
                             coroutineScope.launch {

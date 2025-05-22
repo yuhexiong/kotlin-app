@@ -22,6 +22,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat.Type
 import android.util.Log
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.room.Room
 import kotlinx.coroutines.launch
@@ -113,6 +114,8 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
+            var itemToDelete by remember { mutableStateOf<ShoppingItem?>(null) }
+
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -124,15 +127,21 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(56.dp)
                             .padding(top = 4.dp, bottom = 4.dp)
                             .borderedItem()
-                            .clickable {
-                                coroutineScope.launch {
-                                    dao.updateItem(item.copy(isBought = !item.isBought))
+                            .combinedClickable(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        dao.updateItem(item.copy(isBought = !item.isBought))
+                                    }
+                                },
+                                onLongClick = {
+                                    itemToDelete = item
                                 }
-                            },
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.Start
                     ) {
                         Text(
                             text = item.name,
@@ -146,18 +155,31 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
                                 TextStyle(fontWeight = FontWeight.Bold)
                             }
                         )
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                dao.deleteItem(item)
-                            }
-                        }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                        }
                     }
                 }
+            }
+
+            if (itemToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { itemToDelete = null },
+                    title = { Text("刪除項目") },
+                    text = { Text("確定要刪除這個項目嗎？") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            coroutineScope.launch {
+                                dao.deleteItem(itemToDelete!!)
+                                itemToDelete = null
+                            }
+                        }) {
+                            Text("是")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { itemToDelete = null }) {
+                            Text("否")
+                        }
+                    }
+                )
             }
 
             // 底部輸入與加入按鈕

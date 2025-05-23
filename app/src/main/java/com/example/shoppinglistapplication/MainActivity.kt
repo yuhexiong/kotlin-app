@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,16 +16,11 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.scale
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat.Type
-import android.util.Log
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.room.Room
 import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 import com.example.shoppinglistapplication.data.dao.ShoppingItemDao
 import com.example.shoppinglistapplication.data.database.AppDatabase
 import com.example.shoppinglistapplication.data.entity.ShoppingItem
@@ -34,9 +28,11 @@ import com.example.shoppinglistapplication.ui.theme.TopAppBarWithBackground
 import com.example.shoppinglistapplication.ui.theme.borderedItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 
 class MainActivity : ComponentActivity() {
 
@@ -143,17 +139,20 @@ fun ShoppingListScreen(dao: ShoppingItemDao,isKeyboardVisible: Boolean) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start
                     ) {
+                        IconToggleButton(
+                            checked = item.isBought,
+                            onCheckedChange = {
+                                coroutineScope.launch {
+                                    dao.updateItem(item.copy(isBought = it))
+                                }
+                            },
+                        ) {
+                            val icon = if (item.isBought) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked
+                            Icon(imageVector = icon, contentDescription = null)
+                        }
                         Text(
                             text = item.name,
-                            modifier = Modifier.padding(start = 16.dp),
-                            style = if (item.isBought) {
-                                TextStyle(
-                                    textDecoration = TextDecoration.LineThrough,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            } else {
-                                TextStyle(fontWeight = FontWeight.Bold)
-                            }
+                            style = TextStyle(fontWeight = FontWeight.Bold)
                         )
                     }
                 }
